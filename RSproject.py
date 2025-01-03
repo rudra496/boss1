@@ -52,6 +52,15 @@ source_ips = set()
 port_lock = Lock()
 stop_event = Event()
 user_agent = UserAgent()
+
+def display_banner():
+    system('cls' if name == 'nt' else 'clear')
+    DEFAULT, GREEN, RED, YELLOW, YELLOW2, BLINK, MAGENTA = '\033[0m', '\033[1;92m', '\033[1;31m', '\033[3m\033[1;33m', '\033[1;93m', '\033[5m', '\033[1;35m'
+
+    print('''  {6}\ (˶ᵔ ᵕ ᵔ˶) /{0}
+                                                            {6}\         /{0}
+          '''.format(DEFAULT, GREEN, RED, YELLOW, YELLOW2, BLINK, MAGENTA))
+
 def tcp_syn_flood(destination_ip, packet_size, thread_num):
     global total_sent
     port = 1
